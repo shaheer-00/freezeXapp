@@ -68,6 +68,11 @@ function buildAppRow(a) {
   row.className = 'trow approw';
   row.dataset.path = a.path;
 
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.className = 'bulk';
+  cb.disabled = true;
+
   const chev = document.createElement('div'); chev.className = 'chev'; chev.textContent = '▸';
   const led = document.createElement('div'); led.className = 'led';
 
@@ -75,6 +80,8 @@ function buildAppRow(a) {
   nm.title = a.path;
   const nmText = document.createElement('span'); nmText.textContent = a.name;
   nm.append(nmText);
+
+  const tags = document.createElement('div'); tags.className = 'tags';
 
   const chips = document.createElement('div'); chips.className = 'chips';
   const mk = (cls, label, act) => {
@@ -90,7 +97,7 @@ function buildAppRow(a) {
   mk('net', 'NET', 'net-app');
   mk('', 'LAUNCH', 'launch-app');
 
-  row.append(chev, led, nm, chips);
+  row.append(cb, chev, led, nm, tags, chips);
   return row;
 }
 
