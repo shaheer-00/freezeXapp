@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>freezeXapp</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ambient FX -->
+<div class="fx grid"></div>
+<div class="fx sweep"></div>
+<div class="fx glow"></div>
+<div class="fx scan"></div>
+
+<!-- frameless resize hotzones -->
+<div class="rz n"  data-dir="North"></div>
+<div class="rz s"  data-dir="South"></div>
+<div class="rz e"  data-dir="East"></div>
+<div class="rz w"  data-dir="West"></div>
+<div class="rz ne" data-dir="NorthEast"></div>
+<div class="rz nw" data-dir="NorthWest"></div>
+<div class="rz se" data-dir="SouthEast"></div>
+<div class="rz sw" data-dir="SouthWest"></div>
+
+<!-- ── HUD header ─────────────────────────────────────────── -->
+<header id="hud" data-tauri-drag-region="deep">
+  <div class="hud-id">
+    <div class="mark">
+      <span class="glitch" data-text="freezeXapp">freezeXapp</span>
+    </div>
+    <div class="sub">CHRONO&nbsp;INTERDICT&nbsp;DECK</div>
+  </div>
+
+  <div class="hud-stats">
+    <div class="chip" id="st-host"><b>HOST</b><span>····</span></div>
+    <div class="chip ice" id="st-frozen"><b>❄</b><span>0</span></div>
+    <div class="chip warn" id="st-net"><b>⛔</b><span>0</span></div>
+    <div class="chip live" id="st-global"><b>◉</b><span>ONLINE</span></div>
+    <div class="chip ghost" id="st-clock"><span>--:--:--</span></div>
+    <button class="mini" id="hud-help" title="help">?</button>
+    <div class="wctl">
+      <button id="w-min">─</button><button id="w-max">□</button><button id="w-close">✕</button>
+    </div>
+  </div>
+</header>
+
+<!-- ── main grid ──────────────────────────────────────────── -->
+<main>
+  <!-- targets -->
+  <section id="targets" class="cut">
+    <div class="bar">
+      <span class="bracket">◤</span>
+      <span class="ttl">TARGET ACQUISITION</span>
+      <span class="bracket">◢</span>
+      <span class="spacer"></span>
+      <button class="mini" id="proc-toggle">▼</button>
+      <input type="checkbox" id="sel-all" title="select all visible" />
+      <input id="filter-input" type="text" placeholder="filter…" spellcheck="false" autocomplete="off" />
+      <span class="count" id="counts">0</span>
+    </div>
+    <div id="tlist" class="tlist"></div>
+    <!-- bulk action chip bar -->
+    <div id="bulk-bar" class="bulk-bar hidden">
+      <span class="count" id="bulk-count">0 selected</span>
+      <button class="act frz" id="bulk-freeze">FREEZE</button>
+      <button class="act unfrz" id="bulk-unfreeze">UNFREEZE</button>
+      <button class="act inj"  id="bulk-inject">INJECT</button>
+      <button class="act net"  id="bulk-net">NET</button>
+      <button class="act"      id="bulk-clear">CLEAR</button>
+    </div>
+    <div id="apps-split" class="apps-split hidden">
+      <div class="apps-bar">
+        <span class="bracket">◤</span>
+        <span class="ttl">INSTALLED</span>
+        <span class="bracket">◢</span>
+        <span class="spacer"></span>
+        <button class="mini" id="apps-toggle">▼</button>
+      </div>
+      <div id="applist" class="tlist"></div>
+    </div>
+    <div id="empty" class="empty hidden">NO SIGNAL — nothing matches</div>
+  </section>
+
+  <!-- telemetry + console -->
+  <aside id="side">
+    <section class="cut">
+      <div class="bar">
+        <span class="bracket">◤</span>
+        <span class="ttl">TELEMETRY</span>
+        <span class="bracket">◢</span>
+      </div>
+      <div class="tele">
+        <div class="meter">
+          <label>INTERDICTED</label>
+          <div class="bar-track"><i id="m-frozen"></i></div>
+          <span class="num" id="m-frozen-n">0</span>
+        </div>
+        <div class="meter">
+          <label>NET&nbsp;SEVERED</label>
+          <div class="bar-track warn"><i id="m-net"></i></div>
+          <span class="num" id="m-net-n">0</span>
+        </div>
+        <div class="meter clickable" id="frozen-bar" title="frozen targets">
+          <label>SUSPENDED</label>
+          <div class="bar-track ice"><i id="m-frozen2"></i></div>
+          <span class="num" id="m-frozen-n2">0</span>
+        </div>
+        <dl class="readout">
+          <dt>target</dt><dd id="t-target">—</dd>
+          <dt>mode</dt><dd id="t-mode">—</dd>
+          <dt>utc</dt><dd id="t-clock">—</dd>
+          <dt>payload</dt><dd id="t-dll">…</dd>
+        </dl>
+      </div>
+    </section>
+
+    <section class="cut grow">
+      <div class="bar">
+        <span class="bracket">◤</span>
+        <span class="ttl">CONSOLE</span>
+        <span class="bracket">◢</span>
+        <span class="spacer"></span>
+        <button class="mini" id="log-clear">CLR</button>
+      </div>
+      <div id="log" class="log"></div>
+    </section>
+  </aside>
+</main>
+
+<!-- ── frozen targets panel ──────────────────────────────────── -->
+<div id="frozen-panel" class="frozen-panel hidden">
+  <div class="fbar cut">
+    <div class="bar">
+      <span class="bracket">◤</span>
+      <span class="ttl">CYCLOPS IN SUSPENSION</span>
+      <span class="bracket">◢</span>
+      <span class="spacer"></span>
+      <button class="mini" id="frozen-close">✕</button>
+    </div>
+    <!-- sortable header -->
+    <div class="froz-head cut">
+      <div class="fhead-nm"      data-key="name">NAME</div>
+      <div class="fhead-tag"     data-key="frozen_mode">MODE</div>
+      <div class="fhead-tag"     data-key="frozen_at">FROZEN AT</div>
+    </div>
+    <div id="flist" class="tlist"></div>
+    <div id="fempty" class="empty hidden">NO CYCLOPS IN SUSPENSION</div>
+  </div>
+</div>
+
+<!-- ── freeze confirm modal ───────────────────────────────────── -->
+<div id="freeze-modal" class="overlay hidden">
+  <div class="box cut fg-modal">
+    <div class="bar">
+      <span class="bracket">◤</span>
+      <span class="ttl">INTERDICT TARGET</span>
+      <span class="bracket">◢</span>
+      <span class="spacer"></span>
+      <button class="mini" id="fm-close">✕</button>
+    </div>
+
+    <div class="fg-row"><span class="fg-l">TARGET</span><span class="fg-v" id="fm-target">—</span></div>
+    <div class="fg-row"><span class="fg-l">TARGET SEES NOW</span><span class="fg-v live" id="fm-clock">--:--:--</span></div>
+
+    <div class="fg-seg">
+      <label class="rg"><input type="radio" name="fm-mode" value="dead"  checked> DEAD STOP · halt at now</label>
+      <label class="rg"><input type="radio" name="fm-mode" value="hold"> HOLD AT · freeze at</label>
+      <label class="rg"><input type="radio" name="fm-mode" value="shift"> SHIFT · live clock offset</label>
+    </div>
+
+    <div id="fm-dt" class="hidden">
+      <div class="fg-row">
+        <input id="fm-date" type="date" />
+        <input id="fm-time" type="time" step="1" />
+      </div>
+    </div>
+
+    <div id="fm-shift" class="hidden">
+      <div class="fg-row">
+        <label>offset (hh:mm)</label>
+        <input id="fm-delta" type="text" placeholder="-1:00" spellcheck="false" />
+        <span class="fg-hint" id="fm-shift-hint">→ target sees now + offset</span>
+      </div>
+    </div>
+
+    <div class="row">
+      <button id="fm-cancel" class="btn">CANCEL</button>
+      <button id="fm-go" class="btn go">ENGAGE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── shell prompt ───────────────────────────────────────── -->
+<footer id="deck">
+  <span class="ps1">root@freezegun:~#</span>
+  <input id="cmd-input" type="text" spellcheck="false" autocomplete="off" />
+  <span class="msg" id="status-msg">ready</span>
+</footer>
+
+<!-- ── help ───────────────────────────────────────────────── -->
+<div id="help" class="overlay hidden">
+  <div class="box cut">
+    <div class="bar">
+      <span class="bracket">◤</span>
+      <span class="ttl">COMMANDS</span>
+      <span class="bracket">◢</span>
+      <span class="spacer"></span>
+      <button class="mini" id="help-close">✕</button>
+    </div>
+    <table class="keys">
+      <tr><td>freeze &lt;pid&gt;</td><td>inject hooks + interdict clock (−1h)</td></tr>
+      <tr><td>unfreeze &lt;pid&gt;</td><td>release clock back to real time</td></tr>
+      <tr><td>inject &lt;pid&gt;</td><td>load hook payload only</td></tr>
+      <tr><td>net &lt;pid&gt;</td><td>toggle egress block (needs admin)</td></tr>
+      <tr><td>install</td><td>list installed applications</td></tr>
+      <tr><td>launch &lt;path&gt;</td><td>start app + auto-target</td></tr>
+      <tr><td>halt / wake</td><td>all hooks off / on</td></tr>
+      <tr><td>filter &lt;text&gt;</td><td>narrow the target list</td></tr>
+      <tr><td>ls</td><td>rescan processes</td></tr>
+      <tr><td>crt</td><td>toggle scanline overlay</td></tr>
+      <tr><td>clear / help / quit</td><td>the obvious</td></tr>
+    </table>
+    <p class="tiny">Targets selectable by click · action chips on each row · ↑ / ↓ recall history</p>
+  </div>
+</div>
+
+<!-- ── info overlay ───────────────────────────────────────── -->
+<div id="info" class="overlay hidden">
+  <div class="box cut">
+    <div class="bar">
+      <span class="bracket">◤</span>
+      <span class="ttl">FREEGUN · ABOUT</span>
+      <span class="bracket">◢</span>
+      <span class="spacer"></span>
+      <button class="mini" id="info-close">✕</button>
+    </div>
+    <p>
+      freezeXapp is a <b>chrono interdict deck</b> — a Windows cyberdeck that
+      freezes the clock for any process and severs its network egress.
+    </p>
+    <p>
+      <b>How it works:</b> A kernel-mode time-hook DLL (freezex.dll) is injected
+      into target processes. The host writes a per-PID freeze schedule to a
+      shared memory control block; injected hooks intercept time APIs
+      (<code>GetSystemTime</code>, <code>QueryPerformanceCounter</code>,
+      <code>GetTickCount</code>) and return frozen values.
+    </p>
+    <p>
+      <b>Clock modes:</b> <b>FREEZE</b> shifts the target clock −1h from
+      real time (OFFSET mode). <b>HALT/WAKE</b> engages or disengages all
+      hooks globally. <b>NET</b> adds a Windows Firewall outbound rule for
+      the target's exe path (requires admin).
+    </p>
+    <div class="faq">
+      <div class="faq-item"><b>Freeze a running process?</b> Click FREEZE on its row (or type <code>freeze &lt;pid&gt;</code>).</div>
+      <div class="faq-item"><b>Freeze an app before it runs?</b> Find it in Installed Apps below, click FREEZE — it launches, injects, then freezes.</div>
+      <div class="faq-item"><b>Block internet for a process?</b> Click NET on its row. Adds a firewall outbound rule by exe path (needs admin).</div>
+      <div class="faq-item"><b>Unfreeze / unblock?</b> Click UNFRZ or NET again to toggle back.</div>
+      <div class="faq-item"><b>Pause everything?</b> Type <code>halt</code> — all hooks pass through. <code>wake</code> re-engages.</div>
+    </div>
+    <p>
+      <b>Built for:</b> testing, debugging, and authorized compatibility work. Targets freezex time-hook DLL.
+      You are responsible for complying with the law and license terms of any
+      software you target.
+    </p>
+    <div class="row">
+      <button id="info-ok" class="btn go">GOT IT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── consent ────────────────────────────────────────────── -->
+<div id="consent" class="overlay">
+  <div class="box cut warn">
+    <div class="bar"><span class="bracket">◤</span><span class="ttl">⚠ AUTHORIZED USE ONLY</span><span class="bracket">◢</span></div>
+    <p>
+      FREEGUN freezes the system clock and severs network for <b>any process</b>
+      you designate.
+    </p>
+    <p>
+      Built for <b>testing, debugging and authorized compatibility work</b>.
+      You are responsible for complying with the law and with the licence terms
+      of any software you target. The authors accept no liability for misuse.
+    </p>
+    <div class="row">
+      <button id="consent-exit" class="btn">✕ ABORT</button>
+      <button id="consent-accept" class="btn go">▶ ENGAGE</button>
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>

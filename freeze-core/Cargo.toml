@@ -1,0 +1,33 @@
+[package]
+name = "freeze-core"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Only the injected side needs the detour engine; keep it out of the host build.
+minhook = { version = "0.9", optional = true }
+# Host-side persistence (TABLE ⇄ %APPDATA%). Non-optional: host.rs compiles in
+# every feature set, so these derives must always resolve.
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1" }
+windows = { version = "0.62", features = [
+    "Win32_Foundation",
+    "Win32_System",
+    "Win32_System_Threading",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+    "Win32_System_Diagnostics",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_Security",
+] }
+
+[features]
+default = []
+# controller (Tauri backend) — writer of the shared block + injector + netsh
+host = []
+# injected DLL — hook table + shared-block reader
+dll = ["dep:minhook"]

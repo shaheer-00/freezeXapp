@@ -1,0 +1,19 @@
+# Rust
+/target
+**/*.rs.bk
+Cargo.lock
+
+# Tauri / Vite
+node_modules
+dist
+**/*.msi
+**/*.exe
+
+# IDE
+.idea
+.vscode
+*.swp
+.DS_Store
+
+# OS
+Thumbs.db

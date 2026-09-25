@@ -1,0 +1,12 @@
+[package]
+name = "freezex-dll"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+name = "freezex"
+
+[dependencies]
+freeze-core = { path = "../freeze-core", default-features = false, features = ["dll"] }
+windows = { version = "0.62", features = ["Win32_System_SystemServices"] }
