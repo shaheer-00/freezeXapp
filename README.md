@@ -2,6 +2,7 @@
 
 A Windows cyberdeck that freezes the system clock for any process and severs its network egress.
 
+![freezeXapp screenshot](screenshot.png)
 
 A kernel-mode time-hook DLL (`freezex.dll`) is injected into target processes; the host writes a per-PID freeze schedule to shared memory and injected hooks intercept `GetSystemTime`, `GetLocalTime`, `GetSystemTimeAsFileTime`, `GetTickCount`, `GetTickCount64`, `QueryPerformanceCounter`, `NtQuerySystemTime`, and `timeGetTime`.
 
