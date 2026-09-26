@@ -42,6 +42,7 @@ struct Orig {
     get_system_time: FnGetSystemTime,
     get_local_time: FnGetLocalTime,
     get_sys_filetime: FnGetSysFileTime,
+    get_sys_filetime_precise: FnGetSysFileTime,
     get_tick: FnGetTickCount,
     get_tick64: FnGetTickCount64,
     qpc: FnQpc,
@@ -192,6 +193,21 @@ unsafe extern "system" fn hk_get_sys_filetime(lp: *mut FILETIME) {
     }
 }
 
+unsafe extern "system" fn hk_get_sys_filetime_precise(lp: *mut FILETIME) {
+    let o = match ORIG.get() {
+        Some(o) => *o,
+        None => return,
+    };
+    match mode_for(GetCurrentProcessId()) {
+        Mode::Off => (o.get_sys_filetime_precise)(lp),
+        Mode::Abs(a) => *lp = u64_ft(a.utc_ft),
+        Mode::Offset(off) => {
+            (o.get_sys_filetime_precise)(lp);
+            *lp = u64_ft(ft_u64(*lp).wrapping_add(off as u64));
+        }
+    }
+}
+
 unsafe extern "system" fn hk_nt_query_system_time(lp: *mut FILETIME) -> i32 {
     let o = match ORIG.get() {
         Some(o) => *o,
@@ -279,6 +295,7 @@ pub fn install() -> bool {
             get_system_time: nop_st,
             get_local_time: nop_st,
             get_sys_filetime: nop_ft,
+            get_sys_filetime_precise: nop_ft,
             get_tick: nop_u32,
             get_tick64: nop_u64,
             qpc: nop_qpc,
@@ -299,6 +316,7 @@ pub fn install() -> bool {
         hk!(get_system_time, "kernel32.dll", "GetSystemTime", hk_get_system_time, FnGetSystemTime);
         hk!(get_local_time, "kernel32.dll", "GetLocalTime", hk_get_local_time, FnGetLocalTime);
         hk!(get_sys_filetime, "kernel32.dll", "GetSystemTimeAsFileTime", hk_get_sys_filetime, FnGetSysFileTime);
+        hk!(get_sys_filetime_precise, "kernel32.dll", "GetSystemTimePreciseAsFileTime", hk_get_sys_filetime_precise, FnGetSysFileTime);
         hk!(get_tick, "kernel32.dll", "GetTickCount", hk_get_tick_count, FnGetTickCount);
         hk!(get_tick64, "kernel32.dll", "GetTickCount64", hk_get_tick_count64, FnGetTickCount64);
         hk!(qpc, "kernel32.dll", "QueryPerformanceCounter", hk_qpc, FnQpc);
