@@ -1,6 +1,6 @@
 [package]
 name = "freezegun-ui"
-version = "0.1.0"
+version = "0.2.0"
 description = "freezeXapp — freeze time + block network for any app"
 authors = ["you"]
 edition = "2021"

@@ -4,7 +4,7 @@ A Windows cyberdeck that freezes the system clock for any process and severs its
 
 ![freezeXapp screenshot](screenshot.png)
 
-A kernel-mode time-hook DLL (`freezex.dll`) is injected into target processes; the host writes a per-PID freeze schedule to shared memory and injected hooks intercept `GetSystemTime`, `GetLocalTime`, `GetSystemTimeAsFileTime`, `GetTickCount`, `GetTickCount64`, `QueryPerformanceCounter`, `NtQuerySystemTime`, and `timeGetTime`.
+A kernel-mode time-hook DLL (`freezex.dll`) is injected into target processes; the host writes a per-PID freeze schedule to shared memory and injected hooks intercept `GetSystemTime`, `GetLocalTime`, `GetSystemTimeAsFileTime`, `GetSystemTimePreciseAsFileTime`, `GetTickCount`, `GetTickCount64`, `QueryPerformanceCounter`, `NtQuerySystemTime`, and `timeGetTime`.
 
 ## Features
 
@@ -18,7 +18,14 @@ A kernel-mode time-hook DLL (`freezex.dll`) is injected into target processes; t
 
 ## Build (Windows)
 
+The hook payload must be built before the host app — the host loads `freezex.dll`
+at runtime from its own directory, it is not linked in.
+
 ```bash
+# 1. hook payload
+cargo build -p freezex-dll --release
+
+# 2. host app
 cd freezegun-ui
 cargo tauri dev
 ```
